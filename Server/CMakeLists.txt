@@ -103,6 +103,7 @@ set (SRC_FILES
     src/bgp/EVPN.cpp
     src/bgp/linkstate/MPLinkState.cpp
     src/bgp/linkstate/MPLinkStateAttr.cpp
+    src/redis/MsgBusImpl_redis.cpp
     )
 
 # Disable warnings

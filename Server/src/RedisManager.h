@@ -10,11 +10,27 @@
 #ifndef REDISMANAGER_H_
 #define REDISMANAGER_H_
 
-#include <hiredis/hiredis.h>
+#include <sonic-swss-common/common/dbconnector.h>
+#include <sonic-swss-common/common/table.h>
+
 #include <string>
 #include <list>
 #include <map>
+#include <unordered_set>
+#include <vector>
 #include "Logger.h"
+
+/**
+ * BMP_TABLE_* defines the default table name prefix
+ */
+#define BMP_DB_NAME                "STATE_DB"
+#define BMP_TABLE_NEI              "BGP_NEIGHBOR_TABLE"
+#define BMP_TABLE_RIB_IN           "BGP_RIB_IN_TABLE"
+#define BMP_TABLE_RIB_OUT          "BGP_RIB_OUT_TABLE"
+#define BMP_TABLE_NEI_PREFIX       "BGP_NEIGHBOR"
+#define BMP_TABLE_NEI_KEYS         "KEYS BGP_NEIGHBOR*"
+#define BMP_TABLE_RIB_IN_KEYS      "KEYS BGP_RIB_IN_TABLE*"
+#define BMP_TABLE_RIB_OUT_KEYS     "KEYS BGP_RIB_OUT_TABLE*"
 
 
 /**
@@ -25,19 +41,8 @@
  *      Encapsulate redis operation in this class instance.
  */
 class RedisManager {
-public:
-    /**
-     * BMP_TABLE_* defines the default table name prefix
-     */
-    #define BMP_TABLE_NEI              "BGP_NEIGHBOR_TABLE"
-    #define BMP_TABLE_RIB_IN           "BGP_RIB_IN_TABLE"
-    #define BMP_TABLE_RIB_OUT          "BGP_RIB_OUT_TABLE"
-    #define BMP_TABLE_NEI_PREFIX       "BGP_NEIGHBOR"
-    #define BMP_TABLE_NEI_KEYS         "KEYS BGP_NEIGHBOR*"
-    #define BMP_TABLE_RIB_IN_KEYS      "KEYS BGP_RIB_IN_TABLE*"
-    #define BMP_TABLE_RIB_OUT_KEYS     "KEYS BGP_RIB_OUT_TABLE*"
-   
 
+public:
     /*********************************************************************//**
      * Get singleton instance for class
      ***********************************************************************/
@@ -47,6 +52,11 @@ public:
      * Constructor for class
      ***********************************************************************/
     RedisManager();
+
+    /*********************************************************************//**
+     * Destructor for class
+     ***********************************************************************/
+    ~RedisManager();
 
     /***********************************************************************
      * Setup logger for this class
@@ -60,120 +70,60 @@ public:
      *
      * \param [in] N/A
      */
-    bool ResetAllTables();
+    void ResetAllTables();
 
     /**
-     * Reset BGP_Neighbor* Table
+     * Reset ResetBMPTable, this will flush redis
      *
-     * \param [in] N/A
+     * \param [in] table    Reference to table name BGP_NEIGHBOR_TABLE/BGP_RIB_OUT_TABLE/BGP_RIB_IN_TABLE
      */
-    bool ResetBGPNeighborTable();
+    bool ResetBMPTable(const std::string & table);
 
     /**
-     * Reset BGP_RIB_IN* Table
+     * WriteBMPTable
      *
-     * \param [in] N/A
+     * \param [in] table            Reference to table name
+     * \param [in] key              Reference to various keys list
+     * \param [in] fieldValues      Reference to field-value pairs
      */
-    bool ResetBGPRibInTable();
+    bool WriteBMPTable(const std::string& table, const std::vector<std::string>& keys, const std::vector<swss::FieldValueTuple> fieldValues);
 
     /**
-     * Reset BGP_RIB_OUT* Table
+     * RemoveBMPTable
      *
-     * \param [in] N/A
+     * \param [in] table            Reference to table name
+     * \param [in] args             Reference to various keys
      */
-    bool ResetBGPRibOutTable();
+    bool RemoveBMPTable(const std::vector<std::string>& keys);
 
     /**
-     * WriteBGPNeighborTable
+     * Enable specific Table
      *
-     * \param [in] neighbor  Reference to neighbor address
-     * \param [in] field     Reference to the specific field name
-     * \param [in] value     Reference to the value to be set
+     * \param [in] table    Reference to table name
      */
-    bool WriteBGPNeighborTable(const std::string& neighbor, const std::string& field, const std::string& value);
-
-    /**
-     * WriteBGPInRibTable
-     *
-     * \param [in] neighbor  Reference to neighbor address
-     * \param [in] nlri      Reference to nlri
-     * \param [in] field     Reference to the specific field name
-     * \param [in] value     Reference to the value to be set
-     */
-    bool WriteBGPRibInTable(const std::string& neighbor, const std::string& nlri, const std::string& field, const std::string& value);
-
-    /**
-     * WriteBGPOutRibTable
-     *
-     * \param [in] neighbor  Reference to neighbor address
-     * \param [in] nlri      Reference to nlri
-     * \param [in] field     Reference to the specific field name
-     * \param [in] value     Reference to the value to be set
-     */
-    bool WriteBGPRibOutTable(const std::string& neighbor, const std::string& nlri, const std::string& field, const std::string& value);
+    bool EnableTable(const std::string & table);
 
     /**
      * Enable BGP_Neighbor* Table
      *
-     * \param [in] N/A
+     * \param [in] table    Reference to table name
      */
-    bool EnableBGPNeighborTable();
+    bool DisableTable(const std::string & table);
+
 
     /**
-     * Enable BGP_Neighbor* Table
+     * Get Key separator for deletion
      *
      * \param [in] N/A
      */
-    bool DisableBGPNeighborTable();
-
-    /**
-     * Enable BGP_RIB_IN* Table
-     *
-     * \param [in] N/A
-     */
-    bool EnableBGPRibInTable();
-
-    /**
-     * Enable BGP_RIB_IN* Table
-     *
-     * \param [in] N/A
-     */
-    bool DisableBGPRibInTable();
-
-    /**
-     * Enable BGP_RIB_OUT* Table
-     *
-     * \param [in] N/A
-     */
-    bool EnableBGPRibOutTable();
-
-    /**
-     * Enable BGP_RIB_OUT* Table
-     *
-     * \param [in] N/A
-     */
-    bool DisableBGPRibOutTable();
+    std::string GetKeySeparator();
 
 private:
-    /*********************************************************************//**
-     * Destructor for class
-     ***********************************************************************/
-    ~RedisManager();
-
-    /**
-     * Connect to redis and maintain the context
-     *
-     * \param [in] N/A
-     */
-    bool ConnectRedis();
-
-private:
-    redisContext* redis_;
+    swss::DBConnector stateDb_;
+    std::string separator_;
     Logger *logger;
     bool connected_;
-    bool neiTableEnable_;
-    bool ribInTableEnable_;
-    bool ribOutTableEnable_;
+    std::unordered_set<std::string> enabledTables_;
 };
 
 
