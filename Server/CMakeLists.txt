@@ -33,7 +33,6 @@ find_library(LIBYAML_CPP_LIBRARY
         lib64
         lib)
 
-
 find_path(LIBSWSSCOMMON_INCLUDE_DIR
         sonic-swss-common/common/dbconnector.h
         HINTS
@@ -49,6 +48,8 @@ find_library(LIBSWSSCOMMON_LIBRARY
         PATH_SUFFIXES
         lib64
         lib)
+
+
 
 find_library(LIBRT_LIBRARY
         NAMES
@@ -74,7 +75,6 @@ endif()
 if (NOT LIBRT_LIBRARY AND NOT MACOSX)
     Message (FATAL_ERROR "librt was not found, cannot proceed.")
 endif()
-
 
 
 # Update the include dir
